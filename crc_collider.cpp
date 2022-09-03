@@ -26,6 +26,8 @@
 
 namespace crc_collider
 {
+namespace
+{
 template <typename Container>
 inline std::optional<Container> parseWithTrailingCRC(const void* const ptr) noexcept
 {
@@ -185,6 +187,7 @@ void testCRC64WE()
     REQUIRE(0xFCAC'BEBD'5931'A992ULL == (~crc.get()));
 }
 
+}  // namespace
 }  // namespace crc_collider
 
 int main()

@@ -12,6 +12,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} \
 -Werror -Wall -Wextra -Wdouble-promotion -Wswitch-enum -Wfloat-equal -Wundef -Wconversion -Wtype-limits \
 -Wsign-conversion -Wcast-align -Wmissing-declarations -Wzero-as-null-pointer-constant -Wnon-virtual-dtor \
 -Woverloaded-virtual -Wsign-promo -Wold-style-cast \
+-Wno-error=attributes \
 ")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native -mtune=native -fomit-frame-pointer")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -march=native -mtune=native")
