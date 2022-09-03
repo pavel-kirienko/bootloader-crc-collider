@@ -248,7 +248,7 @@ int main()
            << "Elapsed " << std::chrono::duration_cast<std::chrono::minutes>(elapsed).count() << " minutes; "
            << "hash count " << (static_cast<double>(total_hash_count) * 1e-6) << " M; "
            << "hash rate " << (hash_rate * 1e-6) << " MH/s"  //
-           << '\r' << std::flush;
+           << "    \r" << std::flush;
 #if DEBUG
         std::quick_exit(0);
 #endif
