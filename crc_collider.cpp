@@ -209,7 +209,7 @@ int main()
 #else
         static_cast<std::uint32_t>(std::max(1, static_cast<std::int32_t>(std::thread::hardware_concurrency()) - 2));
 #endif
-    std::cout << "Thread count: " << thread_count << std::endl;
+    std::cerr << "Thread count: " << thread_count << std::endl;
     std::mutex                 progress_mutex;
     std::vector<std::uint64_t> thread_hash_counters(thread_count, 0);
     const auto                 progress_reporter = [&](const std::size_t thread_index, const std::uint64_t hash_count)
