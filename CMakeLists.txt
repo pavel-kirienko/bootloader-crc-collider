@@ -24,3 +24,4 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
 add_executable(crc_collider crc_collider.cpp)
+target_link_libraries(crc_collider pthread)
