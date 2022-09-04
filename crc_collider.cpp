@@ -1,14 +1,12 @@
 // Copyright (c) 2022  Zubax Robotics  <info@zubax.com>
 
 #include "hash.hpp"
+#include "app_shared.hpp"
 #include <random>
 #include <thread>
 #include <vector>
-#include <cstring>
 #include <numeric>
-#include <optional>
 #include <iostream>
-#include <iterator>
 #include <algorithm>
 #include <syncstream>
 #include <functional>
@@ -28,108 +26,8 @@ namespace crc_collider
 {
 namespace
 {
-template <typename Container>
-inline std::optional<Container> parseWithTrailingCRC(const void* const ptr) noexcept
-{
-    class ContainerWrapper final
-    {
-    public:
-        Container container{};
 
-        [[nodiscard]] bool isValid() const
-        {
-            CRC64WE crc_computer;
-            crc_computer.update(reinterpret_cast<const std::uint8_t*>(&container), sizeof(container));  // NOLINT
-            return crc_ == crc_computer.get();
-        }
-
-    private:
-        std::uint64_t crc_{};
-    };
-    if (const auto* const wrapper = reinterpret_cast<const ContainerWrapper*>(ptr); wrapper->isValid())
-    {
-        return wrapper->container;
-    }
-    return {};
-}
-
-template <typename Container>
-inline auto composeWithLeadingCRC(const Container& cont) noexcept
-{
-    class AppSharedMarshaller
-    {
-    public:
-        class ContainerWrapper
-        {
-            std::uint64_t crc_{};
-
-        public:
-            Container container{};
-
-            ContainerWrapper() = default;
-
-            explicit ContainerWrapper(const Container& c) : container(c)
-            {
-                CRC64WE crc_computer;
-                crc_computer.update(reinterpret_cast<const std::uint8_t*>(&container), sizeof(container));
-                crc_ = crc_computer.get();
-            }
-        };
-
-        explicit AppSharedMarshaller(void* loc) : location_(loc) {}
-
-        void write(const Container& cont)
-        {
-            ContainerWrapper wrapper(cont);
-            std::memmove(location_, &wrapper, sizeof(wrapper));
-        }
-
-    private:
-        void* location_;
-    };
-
-    std::array<std::uint8_t, sizeof(typename AppSharedMarshaller::ContainerWrapper)> buffer{};
-    AppSharedMarshaller                                                              marshaller(buffer.data());
-    marshaller.write(cont);
-    return buffer;
-}
-
-struct LegacyAppSharedV02 final
-{
-    [[maybe_unused]] std::uint32_t         reserved_a               = 0;
-    [[maybe_unused]] std::uint32_t         reserved_b               = 0;
-    [[maybe_unused]] std::uint32_t         can_bus_speed            = 0;
-    [[maybe_unused]] std::uint8_t          uavcan_node_id           = 0;
-    [[maybe_unused]] std::uint8_t          uavcan_fw_server_node_id = 0;
-    [[maybe_unused]] std::array<char, 201> uavcan_file_name{};
-    [[maybe_unused]] bool                  stay_in_bootloader = true;
-    [[maybe_unused]] std::uint64_t         reserved_c         = 0;
-    [[maybe_unused]] std::uint64_t         reserved_d         = 0;
-};
-
-// operator<< overload for LegacyAppSharedV02
-std::ostream& operator<<(std::ostream& os, const LegacyAppSharedV02& obj)
-{
-    const auto f = os.flags();
-    os << std::boolalpha;
-    os << "can_bus_speed: " << obj.can_bus_speed << '\n';
-    os << "uavcan_node_id: " << static_cast<std::int64_t>(obj.uavcan_node_id) << '\n';
-    os << "uavcan_fw_server_node_id: " << static_cast<std::int64_t>(obj.uavcan_fw_server_node_id) << '\n';
-    os << "uavcan_file_name: {" << std::hex;
-    for (const auto c : obj.uavcan_file_name)
-    {
-        os.width(2);
-        os.fill('0');
-        os << (static_cast<std::uint16_t>(c) & 0xFFU) << ',';
-    }
-    os << "}\n";
-    os << "stay_in_bootloader: " << obj.stay_in_bootloader << '\n';
-    os << std::flush;
-    os.flags(f);
-    return os;
-}
-
-void worker(const LegacyAppSharedV02& seed, const std::function<void(std::uint64_t)>& progress_reporter) noexcept
+void worker(const app_shared::LegacyV02& seed, const std::function<void(std::uint64_t)>& progress_reporter) noexcept
 {
     auto obj = seed;
     {
@@ -146,7 +44,7 @@ void worker(const LegacyAppSharedV02& seed, const std::function<void(std::uint64
     {
         (*nonce_ptr)++;
         const auto buffer = composeWithLeadingCRC(obj);
-        if (const auto parsed = parseWithTrailingCRC<LegacyAppSharedV02>(buffer.data()))
+        if (const auto parsed = app_shared::parseWithTrailingCRC<app_shared::LegacyV02>(buffer.data()))
         {
             std::osyncstream os(std::cout);
             [[unlikely]] os << "SOLUTION:\n" << obj << std::endl;
@@ -166,8 +64,8 @@ void worker(const LegacyAppSharedV02& seed, const std::function<void(std::uint64
 
 void testCRC64WE()
 {
-    CRC64WE     crc;
-    const char* val = "12345";
+    hash::CRC64WE crc;
+    const char*   val = "12345";
     crc.update(reinterpret_cast<const std::uint8_t*>(val), 5);
     crc.update(nullptr, 0);
     val = "6789";
@@ -193,7 +91,7 @@ void testCRC64WE()
 int main()
 {
     crc_collider::testCRC64WE();
-    crc_collider::LegacyAppSharedV02 obj{
+    app_shared::LegacyV02 obj{
         .can_bus_speed            = 1000000,
         .uavcan_node_id           = 50,
         .uavcan_fw_server_node_id = 127,

@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <array>
 
-namespace crc_collider
+namespace hash
 {
 
 class CRC64WE final
@@ -136,4 +136,4 @@ private:
     std::uint64_t crc_ = Xor;
 };
 
-}  // namespace crc_collider
+}  // namespace hash
