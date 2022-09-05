@@ -18,6 +18,8 @@ app_shared::LegacyV02 g_obj;
 template <typename>
 inline constexpr bool DependentFalsity = false;
 
+constexpr std::size_t NameOffsetBytes = 14U;
+
 template <std::integral T>
 ::bigint makeBigInt(const T& value)
 {
@@ -39,24 +41,20 @@ template <std::integral T>
     return res;
 }
 
-auto makeMessage()
-{
-    const auto                                              msg = composeWithLeadingCRC(g_obj);
-    std::array<std::uint8_t, sizeof(app_shared::LegacyV02)> shifted{};
-    std::copy(msg.begin(), msg.begin() + shifted.size(), shifted.begin());
-    // std::copy(msg.begin() + 8U, msg.end(), shifted.begin());
-    return shifted;
-}
-
 void forgeH(const std::size_t flip_bit_index, ::bigint* const out_hash) noexcept
 {
-    auto shifted = makeMessage();
-    if (flip_bit_index < shifted.size() * CHAR_BIT)
+    auto obj = g_obj;
+    if (flip_bit_index < sizeof(app_shared::LegacyV02) * CHAR_BIT)
     {
         // const auto pos = (flip_bit_index & ~7U) | (7U - (flip_bit_index & 7U)); // if CRC is reflected
-        const auto pos = flip_bit_index;
-        shifted.at(pos / CHAR_BIT) ^= (1U << (pos % CHAR_BIT));
+        const auto pos         = flip_bit_index;
+        const auto pos_in_name = pos - (NameOffsetBytes + hash::CRC64WE::Size) * CHAR_BIT;
+        *reinterpret_cast<std::uint8_t*>(obj.uavcan_file_name.data() + (pos_in_name / CHAR_BIT)) ^=
+            (1U << (pos_in_name % CHAR_BIT));
     }
+    const auto                                              msg = composeWithLeadingCRC(obj);
+    std::array<std::uint8_t, sizeof(app_shared::LegacyV02)> shifted{};
+    std::copy(msg.begin(), msg.begin() + shifted.size(), shifted.begin());
     hash::CRC64WE crc;
     crc.update(shifted.data(), shifted.size());
     *out_hash = makeBigInt(crc.get());
@@ -84,7 +82,7 @@ int main(const int argc, const char* const argv[])
     std::cerr << "Seed:\n" << g_obj << std::endl;
     const ::bigint               target_checksum = solver::makeBigInt<std::uint64_t>(0);
     std::array<std::size_t, 64U> flippable_bits_indices{};
-    const auto                   name_offset = (hash::CRC64WE::Size + 14U) * CHAR_BIT;
+    const auto                   name_offset = (hash::CRC64WE::Size + solver::NameOffsetBytes) * CHAR_BIT;
     std::iota(flippable_bits_indices.begin(), flippable_bits_indices.end(), name_offset);
     const auto forge_result = ::forge(sizeof(app_shared::LegacyV02),  // length specified in bytes!
                                       &target_checksum,
@@ -95,14 +93,19 @@ int main(const int argc, const char* const argv[])
     if (forge_result >= 0)
     {
         std::cerr << "Solution found with " << forge_result << " bits flipped" << std::endl;
-        auto out = solver::makeMessage();
+        auto obj = g_obj;
         for (std::size_t i = 0; i < static_cast<std::size_t>(forge_result); i++)
         {
             const auto idx = flippable_bits_indices.at(i);
             std::cerr << idx << ",";
-            out.at(idx / CHAR_BIT) ^= (1U << (idx % CHAR_BIT));
+            // const auto pos = (flip_bit_index & ~7U) | (7U - (flip_bit_index & 7U)); // if CRC is reflected
+            const auto pos         = idx;
+            const auto pos_in_name = pos - (solver::NameOffsetBytes + hash::CRC64WE::Size) * CHAR_BIT;
+            *reinterpret_cast<std::uint8_t*>(obj.uavcan_file_name.data() + (pos_in_name / CHAR_BIT)) ^=
+                (1U << (pos_in_name % CHAR_BIT));
         }
         std::cerr << std::endl;
+        const auto out = composeWithLeadingCRC(obj);
         std::cout.write(reinterpret_cast<const char*>(out.data()), out.size());
 
         std::array<std::uint8_t, hash::CRC64WE::Size + sizeof(app_shared::LegacyV02)> test_buffer{};
