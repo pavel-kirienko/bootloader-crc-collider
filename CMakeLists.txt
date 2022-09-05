@@ -6,13 +6,13 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
 endif (NOT CMAKE_BUILD_TYPE)
 
-project(crc_collider CXX)
+project(crc_collider CXX C)
 
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} \
--fno-rtti -fno-exceptions \
+-fno-rtti \
 -Werror -Wall -Wextra -Wdouble-promotion -Wswitch-enum -Wfloat-equal -Wundef -Wconversion -Wtype-limits \
 -Wsign-conversion -Wcast-align -Wmissing-declarations -Wzero-as-null-pointer-constant -Wnon-virtual-dtor \
 -Woverloaded-virtual -Wsign-promo -Wold-style-cast \
@@ -26,4 +26,11 @@ message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 add_executable(crc_collider crc_collider.cpp)
 target_link_libraries(crc_collider pthread)
 
-add_executable(composer composer.cpp)
+add_library(
+        crchack STATIC
+        crchack/bigint.c
+        crchack/forge.c
+)
+include_directories(crchack)
+add_executable(solver solver.cpp)
+target_link_libraries(solver crchack)
