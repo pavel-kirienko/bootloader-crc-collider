@@ -6,11 +6,11 @@ from the new Telega software v1.x, but not from the legacy version v0.x.
 The reason is that the bootloader validates the CRC of the update request stored in the shared memory incorrectly,
 thus ignoring it.
 This results in the application simply restarting itself instead of launching the update process.
-Note that this case **does not affect Telega v1.x software*, only its legacy version.
+Note that this case *does not affect the modern Telega v1.x software*, only its legacy version.
 
 If you need to upgrade the firmware from Telega v1, you need not follow this guide.
 If your nodes are equipped with a newer bootloader, you need not follow this guide.
-Otherwise, build this application (or use a pre-built version provided to you earlier), then run the solver:
+Otherwise, build this application (or use a pre-built version provided to you), then run the solver as follows:
 
 ```
 ./solver 1000000 125 127 > out.bin
@@ -55,3 +55,6 @@ To do that, simply command the upgrade process following the standard procedure;
 e.g., click the "Update Firmware" button in the DroneCAN GUI Tool.
 
 <img src="docs/dronecan_gui_tool_screenshot.png" alt="DroneCAN GUI Tool screenshot">
+
+You can easily recreate these instructions in whatever automation solution you're using
+(based on libcanard, pydronecan, or whatever).
