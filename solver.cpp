@@ -7,6 +7,7 @@
 #include <concepts>
 #include <climits>
 #include <numeric>
+#include <sstream>
 
 namespace solver
 {
@@ -103,6 +104,28 @@ int main(const int argc, const char* const argv[])
         }
         std::cerr << std::endl;
         std::cout.write(reinterpret_cast<const char*>(out.data()), out.size());
+
+        std::array<std::uint8_t, hash::CRC64WE::Size + sizeof(app_shared::LegacyV02)> test_buffer{};
+        std::copy(out.begin(), out.end(), test_buffer.begin());
+        if (const auto parsed = app_shared::parseWithTrailingCRC<app_shared::LegacyV02>(test_buffer.data()))
+        {
+            std::cerr << "\nParsed as seen by the bootloader (FYI, do not use):\n" << *parsed << std::endl;
+            std::cerr << "USE THIS FILE NAME: {";
+            std::ostringstream oss;
+            for (std::size_t i = name_offset / 8U;
+                 i < (name_offset / 8U + app_shared::LegacyV02().uavcan_file_name.size());
+                 i++)
+            {
+                oss.width(2);
+                oss.fill('0');
+                oss << std::hex << (static_cast<std::uint16_t>(out.at(i)) & 0xFFU) << ',';
+            }
+            std::cerr << oss.str() << "}\n";
+        }
+        else
+        {
+            std::cerr << "Self-check failed" << std::endl;
+        }
     }
     else
     {
