@@ -31,6 +31,6 @@ add_library(
         crchack/bigint.c
         crchack/forge.c
 )
-include_directories(crchack)
+include_directories(SYSTEM crchack)
 add_executable(solver solver.cpp)
 target_link_libraries(solver crchack)

@@ -16,7 +16,7 @@ namespace
 app_shared::LegacyV02 g_obj;
 
 template <typename>
-inline constexpr bool DependentFalsity = false;
+[[maybe_unused]] inline constexpr bool DependentFalsity = false;
 
 constexpr std::size_t NameOffsetBytes = 14U;
 
