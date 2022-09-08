@@ -72,7 +72,14 @@ int main(const int argc, const char* const argv[])
         g_obj.can_bus_speed            = static_cast<std::uint32_t>(std::stoul(args.at(0)));
         g_obj.uavcan_node_id           = static_cast<std::uint8_t>(std::stoul(args.at(1)));
         g_obj.uavcan_fw_server_node_id = static_cast<std::uint8_t>(std::stoul(args.at(2)));
-        g_obj.stay_in_bootloader       = true;
+        try
+        {
+            g_obj.stay_in_bootloader = std::stoul(args.at(3)) != 0;
+        }
+        catch (const std::out_of_range&)
+        {
+            g_obj.stay_in_bootloader = true;
+        }
     }
     catch (const std::exception& ex)
     {
